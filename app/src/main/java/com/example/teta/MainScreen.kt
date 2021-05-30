@@ -5,27 +5,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Slider
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.teta.utils.toColor
 import com.example.teta.utils.toRGB
 
 const val DEBUG_TAG = "TESTS: "
 const val HUE_SCALE_UNITS = 360
-enum class HSL {
-    HUE,
-    SATURATION,
-    LIGHTNESS
-}
 fun Modifier.fancy() = this
     .padding(30.dp)
     .requiredHeight(300.dp)
     .fillMaxWidth()
+
 fun Modifier.hueCanvasTapListener(onTapAction: (Int) -> Unit): Modifier = this.pointerInput(Unit) {
     detectTapGestures(
         onTap = {
@@ -43,12 +41,11 @@ fun MainScreen(
     onHueChanged: (Float) -> Unit,
     onSaturationChanged: (Float) -> Unit,
     onlightnessChanged: (Float) -> Unit,
-    onColorChanged: (Color) -> Unit = {}
+    espUnit: Esp32Unit = Esp32Unit("Test", "127.0.0.1"),
 ) {
-    val hslArray = FloatArray(3)
-
     Box(modifier = Modifier.background(backColor)) {
         Column(Modifier.fillMaxSize()) {
+            Text(text = "${espUnit.name} : ${espUnit.ip}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
             HueCanvas(hueValue = hue, onHueChanged = onHueChanged)
             Slider(
                 value = saturation,
@@ -71,9 +68,11 @@ fun HueCanvas(
     hueValue: Float,
     onHueChanged: (Float) -> Unit,
 ) {
-    Canvas(modifier = Modifier.fancy().pointerInput(Unit) {
+    Canvas(modifier = Modifier
+        .fancy()
+        .pointerInput(Unit) {
             detectTapGestures(
-                onTap = { onHueChanged((HUE_SCALE_UNITS * it.x / size.width))}
+                onTap = { onHueChanged((HUE_SCALE_UNITS * it.x / size.width)) }
             )
         }
     )
@@ -94,24 +93,4 @@ fun HueCanvas(
         }
         drawRect(Color.DarkGray, Offset(hueValue * hueUnitWidth,0f), size)
     }
-
-}
-
-@Composable
-fun SaturationSlider(saturation: Float, onSaturationChanged: (Float) -> Unit) {
-    Slider(
-        value = saturation,
-        steps = 100,
-        valueRange = 0.0f..1.0f,
-        onValueChange = { println("$DEBUG_TAG: saturation $it"); onSaturationChanged(it) }
-    )
-}
-@Composable
-fun LightnessSlider(lightness: Float, onlightnessChanged: (Float) -> Unit) {
-    Slider(
-        value = lightness,
-        steps = 100,
-        valueRange = 0.0f..1.0f,
-        onValueChange = { println("$DEBUG_TAG: lightness $it"); onlightnessChanged(it) }
-    )
 }

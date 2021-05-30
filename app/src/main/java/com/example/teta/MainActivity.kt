@@ -1,14 +1,19 @@
 package com.example.teta
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import com.example.teta.ui.theme.TetaTheme
 
 class MainActivity : ComponentActivity() {
@@ -24,19 +29,44 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    override fun onResume() {
+        super.onResume()
+        tetaViewModel.startServiceDiscovery()
+        Log.i(DEBUG_TAG, "onResume" )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        tetaViewModel.stopServiceDiscovery()
+        Log.i(DEBUG_TAG, "onPause" )
+    }
 }
 
 @Composable
 private fun MainActivityScreen(viewModel: TetaViewModel) {
-    MainScreen(
-        viewModel.color,
-        viewModel.hue,
-        viewModel.saturation,
-        viewModel.lightness,
-        viewModel::onHueChange,
-        viewModel::onSaturationChange,
-        viewModel::onLightnessChange,
-        onColorChanged = viewModel::sendNewColor)
+    if (viewModel.espUnits.isEmpty()){
+        Text(text = "Empty", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+    } else if (viewModel.currentPosition != NOT_SELECTED) {
+        MainScreen(
+            viewModel.color,
+            viewModel.hue,
+            viewModel.saturation,
+            viewModel.lightness,
+            viewModel::onHueChange,
+            viewModel::onSaturationChange,
+            viewModel::onLightnessChange,
+            viewModel.espUnits.get(viewModel.currentPosition)
+        )
+    } else {
+        //
+        Column() {
+            viewModel.espUnits.forEachIndexed { index, unit ->
+                Button(onClick = { viewModel.currentPosition = index }) {
+                    Text(text = "${unit.ip} : ${unit.name}", Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+            }
+        }
+    }
 }
 
 /*
