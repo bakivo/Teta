@@ -10,12 +10,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.ResponseBody.Companion.toResponseBody
+import java.io.IOException
 
 const val ESP_SERVICE_NAME = "ESP32-WebServer"
 const val NOT_SELECTED = -1
 data class Esp32Unit(val name: String, val ip: String)
+private val client = OkHttpClient()
 
 class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -63,6 +72,10 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     fun onHueChange(hue: Float) {
         this.hue = hue
         color = updateColor()
+        viewModelScope.launch {
+            //fetchHeartbeatInfo("http:/${currentUnit!!.ip}/data")
+            sendHSV(currentUnit!!.ip,"hue")
+        }
     }
     fun onSaturationChange(saturation: Float) {
         this.saturation = saturation
@@ -89,4 +102,51 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     // ************** Networking ***********************
+    private suspend fun fetchHeartbeatInfo(url: String) {
+        val request = Request.Builder()
+            .url(url)
+            .build()
+        val response = client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+                    for ((name, value) in response.headers) {
+                        println("$name: $value")
+                    }
+
+                    println(response.body!!.string())
+                    println(response.message)
+                }
+            }
+
+        })
+    }
+    private suspend fun sendHSV(ip: String, path: String) {
+        val postBody = """
+            {
+            	"hue": $hue,
+            	"saturation": 100,
+            	"value": 100
+            }
+        """.trimIndent()
+        val request = Request.Builder()
+            .url("http:/$ip/$path")
+            .addHeader("Content-Type", "application/json")
+            .post(postBody.toRequestBody("application/json; charset=utf-8".toMediaType()))
+            .build()
+        CoroutineScope(IO).launch {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+                println(response.body!!.string())
+            }
+        }
+
+    }
+    // *************************************************
 }
