@@ -10,16 +10,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.example.teta.utils.await2
+import com.example.teta.utils.await
+import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers.Main
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import java.io.IOException
+import java.lang.Exception
 
 const val ESP_SERVICE_NAME = "ESP32-WebServer"
 const val NOT_SELECTED = -1
@@ -73,8 +74,11 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
         this.hue = hue
         color = updateColor()
         viewModelScope.launch {
-            //fetchHeartbeatInfo("http:/${currentUnit!!.ip}/data")
-            sendHSV(currentUnit!!.ip,"hue")
+            runCatching {
+                sendHSV(currentUnit!!.ip,"hue")
+            }.onFailure {
+                println(DEBUG_TAG + it.message )
+            }
         }
     }
     fun onSaturationChange(saturation: Float) {
@@ -126,6 +130,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
         })
     }
+
     private suspend fun sendHSV(ip: String, path: String) {
         val postBody = """
             {
@@ -139,11 +144,19 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
             .addHeader("Content-Type", "application/json")
             .post(postBody.toRequestBody("application/json; charset=utf-8".toMediaType()))
             .build()
-        CoroutineScope(IO).launch {
+
+        val response = client.newCall(request).await()
+
+        /*CoroutineScope(IO).launch {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("Unexpected code $response")
 
                 println(response.body!!.string())
+            }
+        }*/
+        withContext(IO) {
+            response.body?.use {
+                println(it.charStream().readText())
             }
         }
 
