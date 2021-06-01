@@ -22,7 +22,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import java.io.IOException
 import java.lang.Exception
 
-const val ESP_SERVICE_NAME = "ESP32-WebServer"
+const val ESP_SERVICE_NAME = "ESP32"
 const val NOT_SELECTED = -1
 data class Esp32Unit(val name: String, val ip: String)
 private val client = OkHttpClient()
@@ -73,21 +73,28 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     fun onHueChange(hue: Float) {
         this.hue = hue
         color = updateColor()
-        viewModelScope.launch {
-            runCatching {
-                sendHSV(currentUnit!!.ip,"hue")
-            }.onFailure {
-                println(DEBUG_TAG + it.message )
-            }
-        }
+        sendColor()
     }
     fun onSaturationChange(saturation: Float) {
         this.saturation = saturation
         color = updateColor()
+        sendColor()
     }
     fun onLightnessChange(lightness: Float) {
         this.lightness = lightness
         color = updateColor()
+        sendColor()
+    }
+
+    fun sendColor() {
+        viewModelScope.launch {
+            delay(1000)
+            runCatching {
+                sendHSV(currentUnit!!.ip,"rgb")
+            }.onFailure {
+                println(DEBUG_TAG + it.message )
+            }
+        }
     }
     // ************** Service Discovery ***************
     fun startServiceDiscovery() {
@@ -101,7 +108,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun onServiceDiscoveryResolved(service: MdnsServiceInfo) {
         println("$DEBUG_TAG ${service.ip}")
-        if (service.name == ESP_SERVICE_NAME) {
+        if (service.name.contains(ESP_SERVICE_NAME)) {
             espUnits = espUnits + listOf(Esp32Unit(service.name, service.ip))
         }
     }
@@ -134,11 +141,11 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun sendHSV(ip: String, path: String) {
         val postBody = """
             {
-            	"hue": $hue,
-            	"saturation": 100,
-            	"value": 100
+            	"red": ${(color.red*100).toInt()},
+            	"green": ${(color.green*100).toInt()},
+            	"blue": ${(color.blue*100).toInt()}
             }
-        """.trimIndent()
+        """.trimIndent().also { println(DEBUG_TAG + it) }
         val request = Request.Builder()
             .url("http:/$ip/$path")
             .addHeader("Content-Type", "application/json")
