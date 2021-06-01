@@ -32,13 +32,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         tetaViewModel.startServiceDiscovery()
-        Log.i(DEBUG_TAG, "onResume" )
     }
 
     override fun onPause() {
         super.onPause()
         tetaViewModel.stopServiceDiscovery()
-        Log.i(DEBUG_TAG, "onPause" )
     }
 }
 
