@@ -1,5 +1,6 @@
 package com.example.teta
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -8,18 +9,26 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.teta.utils.toColor
 import com.example.teta.utils.toRGB
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.time.Duration
 
 const val DEBUG_TAG = "TESTS: "
 const val HUE_SCALE_UNITS = 360
@@ -41,8 +50,23 @@ fun MainScreen(
     onSaturationChanged: (Float) -> Unit,
     onlightnessChanged: (Float) -> Unit,
     espUnit: Esp32Unit = Esp32Unit("Test", "127.0.0.1"),
+    toastMessage: String = ""
 ) {
-    Box(Modifier.background(backColor).fillMaxSize()) {
+    //val toastMessage = remember { mutableStateOf("Start") }
+    //val coroutineScope = rememberCoroutineScope()
+
+    Toast.makeText(LocalContext.current,toastMessage, Toast.LENGTH_LONG).show()
+    Box(
+        Modifier
+            .background(backColor)
+            .fillMaxSize()) {
+        /*coroutineScope.launch {
+            repeat(5) {
+                println(DEBUG_TAG + "test coroutine in composable" )
+                toastMessage.value = toastMessage.value + it.toString()
+                delay(3000)
+            }
+        }*/
         Column {
             Text(text = "${espUnit.name} : ${espUnit.ip}", modifier = Modifier
                 .fillMaxWidth()
@@ -53,7 +77,9 @@ fun MainScreen(
 
             Slider(
                 modifier = Modifier
-                    .graphicsLayer(shape = shape, shadowElevation = with(LocalDensity.current) { 2.dp.toPx() })
+                    .graphicsLayer(
+                        shape = shape,
+                        shadowElevation = with(LocalDensity.current) { 2.dp.toPx() })
                     .background(Color.White, shape)
                     .padding(5.dp),
                 value = saturation,

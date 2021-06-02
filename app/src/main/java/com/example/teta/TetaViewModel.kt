@@ -26,7 +26,9 @@ const val ESP_SERVICE_NAME = "ESP32"
 const val NOT_SELECTED = -1
 data class Esp32Unit(val name: String, val ip: String)
 private val client = OkHttpClient()
-
+enum class ScreenHierarchy {
+    EMPTY, NODE_SELECTION, NODE_CONTROL
+}
 class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
     var espUnits: List<Esp32Unit> by mutableStateOf(listOf())
@@ -44,13 +46,17 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     var lightness: Float by mutableStateOf(0f)
         private set
 
+    var screenHierarchy by mutableStateOf(ScreenHierarchy.EMPTY)
+        private set
+
     private val hslArray = FloatArray(3)
     private var mdnsDiscovery: ServiceDiscovery
-
+    var toastMessage: String by mutableStateOf("")
     init {
         setup()
         val nsdManager = application.applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
         mdnsDiscovery = ServiceDiscovery(nsdManager = nsdManager, onServiceAddedIP = this::onServiceDiscoveryResolved)
+        // following block only for test purpose ---------------------------
         viewModelScope.launch {
             delay(5000)
             repeat(3) {
@@ -58,13 +64,18 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
                 delay(1000)
             }
             delay(3000)
-            //espUnits = listOf()
+            screenHierarchy = ScreenHierarchy.NODE_SELECTION
         }
+        // end-------------------------------------------------------------
     }
     // ***************** GUI **********************************************
     private fun setup() {
         hue = 180f; saturation = 0.7f; lightness = 0.45f
         color = updateColor()
+    }
+    fun onNodeSelected(index: Int) {
+        currentPosition = index
+        screenHierarchy = ScreenHierarchy.NODE_CONTROL
     }
     private fun updateColor(): Color {
         return Color(ColorUtils.HSLToColor(hslArray.apply { this[0] = hue; this[1] = saturation ; this[2] = lightness }))
@@ -93,6 +104,9 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
                 sendHSV(currentUnit!!.ip,"rgb")
             }.onFailure {
                 println(DEBUG_TAG + it.message )
+                toastMessage = it.message.toString()
+                delay(3000)
+                screenHierarchy = ScreenHierarchy.NODE_SELECTION
             }
         }
     }
@@ -110,6 +124,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
         println("$DEBUG_TAG ${service.ip}")
         if (service.name.contains(ESP_SERVICE_NAME)) {
             espUnits = espUnits + listOf(Esp32Unit(service.name, service.ip))
+            screenHierarchy = ScreenHierarchy.NODE_SELECTION
         }
     }
     // ************** Networking ***********************
