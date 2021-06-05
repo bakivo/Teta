@@ -52,47 +52,29 @@ fun MainScreen(
     espUnit: Esp32Unit = Esp32Unit("Test", "127.0.0.1"),
     toastMessage: String = ""
 ) {
-    //val toastMessage = remember { mutableStateOf("Start") }
-    //val coroutineScope = rememberCoroutineScope()
-
     Toast.makeText(LocalContext.current,toastMessage, Toast.LENGTH_LONG).show()
     Box(
         Modifier
             .background(backColor)
             .fillMaxSize()) {
-        /*coroutineScope.launch {
-            repeat(5) {
-                println(DEBUG_TAG + "test coroutine in composable" )
-                toastMessage.value = toastMessage.value + it.toString()
-                delay(3000)
-            }
-        }*/
         Column {
             Text(text = "${espUnit.name} : ${espUnit.ip}", modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 5.dp), textAlign = TextAlign.Center)
 
             HueCanvas(hueValue = hue, onHueChanged = onHueChanged)
-            val shape = RoundedCornerShape(8.dp)
 
-            Slider(
-                modifier = Modifier
-                    .graphicsLayer(
-                        shape = shape,
-                        shadowElevation = with(LocalDensity.current) { 2.dp.toPx() })
-                    .background(Color.White, shape)
-                    .padding(5.dp),
-                value = saturation,
-                steps = 100,
-                valueRange = 0.0f..1.0f,
-                onValueChange = { onSaturationChanged(it) }
-            )
-            Slider(
-                value = lightness,
-                steps = 100,
-                valueRange = 0.0f..1.0f,
-                onValueChange = { onlightnessChanged(it) }
-            )
+            SliderBackground() {
+                SliderIcon(icon = TetaIcon.MinSaturation)
+                TetaSlider(value = saturation, modifier = Modifier.weight(1f)) { onSaturationChanged(it) }
+                SliderIcon(icon = TetaIcon.MaxSaturation)
+            }
+
+            SliderBackground() {
+                SliderIcon(icon = TetaIcon.MinLightness)
+                TetaSlider(value = lightness, modifier = Modifier.weight(1f)) { onlightnessChanged(it) }
+                SliderIcon(icon = TetaIcon.MaxLightness)
+            }
         }
     }
 }
@@ -105,7 +87,6 @@ fun MainScreen(
 fun HueCanvas(hueValue: Float, onHueChanged: (Float) -> Unit) {
     Surface(
         color = MaterialTheme.colors.primarySurface,
-        //border = BorderStroke(1.dp, MaterialTheme.colors.secondary),
         shape = RoundedCornerShape(8.dp)
     ) {
         Canvas(
@@ -145,26 +126,13 @@ fun HueCanvas(hueValue: Float, onHueChanged: (Float) -> Unit) {
                 radius = 10f,
                 center = Offset(hueValue * hueUnitWidth, size.height)
             )
-            //drawRect(Color.DarkGray, Offset(hueValue * hueUnitWidth,0f), hueUnitSize)
         }
     }
 }
-
 
 @Preview
 @Composable
 fun PreviewHueCanvas() {
     HueCanvas(hueValue = 55f) {}
 }
-@Preview
-@Composable
-fun PrevSlider() {
-    Surface() {
-        Slider(
-            value = 50F,
-            //steps = 100,
-            valueRange = 0.0f..1.0f,
-            onValueChange = {  }
-        )
-    }
-}
+
