@@ -10,17 +10,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.teta.utils.await2
 import com.example.teta.utils.await
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.ResponseBody.Companion.toResponseBody
-import java.io.IOException
-import java.lang.Exception
 
 const val ESP_SERVICE_NAME = "ESP32"
 const val NOT_SELECTED = -1
@@ -52,30 +47,36 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     private val hslArray = FloatArray(3)
     private var mdnsDiscovery: ServiceDiscovery
     var toastMessage: String by mutableStateOf("")
+
     init {
         setup()
         val nsdManager = application.applicationContext.getSystemService(Context.NSD_SERVICE) as NsdManager
         mdnsDiscovery = ServiceDiscovery(nsdManager = nsdManager, onServiceAddedIP = this::onServiceDiscoveryResolved)
         // following block only for test purpose ---------------------------
         viewModelScope.launch {
-            delay(5000)
             repeat(3) {
                 espUnits = espUnits + listOf(Esp32Unit("esp", "$it"))
                 delay(1000)
             }
-            delay(3000)
             screenHierarchy = ScreenHierarchy.NODE_SELECTION
         }
         // end-------------------------------------------------------------
     }
     // ***************** GUI **********************************************
     private fun setup() {
-        hue = 180f; saturation = 0.7f; lightness = 0.45f
+        hue = 180f; saturation = 1f; lightness = 0.5f
         color = updateColor()
     }
     fun onNodeSelected(index: Int) {
         currentPosition = index
         screenHierarchy = ScreenHierarchy.NODE_CONTROL
+    }
+    fun shouldExitOnBackPressed(): Boolean {
+        if (screenHierarchy == ScreenHierarchy.NODE_CONTROL) {
+            screenHierarchy = ScreenHierarchy.NODE_SELECTION
+            return false
+        }
+        return true
     }
     private fun updateColor(): Color {
         return Color(ColorUtils.HSLToColor(hslArray.apply { this[0] = hue; this[1] = saturation ; this[2] = lightness }))
@@ -116,43 +117,21 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
             mdnsDiscovery.registerDiscoveryService()
         }
     }
+
     fun stopServiceDiscovery() {
         mdnsDiscovery.unregisterDiscoveryService()
     }
 
     private fun onServiceDiscoveryResolved(service: MdnsServiceInfo) {
-        println("$DEBUG_TAG ${service.ip}")
         if (service.name.contains(ESP_SERVICE_NAME)) {
-            espUnits = espUnits + listOf(Esp32Unit(service.name, service.ip))
-            screenHierarchy = ScreenHierarchy.NODE_SELECTION
+            if (!espUnits.any { it.ip == service.ip }) {
+                espUnits = espUnits + listOf(Esp32Unit(service.name, service.ip))
+                screenHierarchy = ScreenHierarchy.NODE_SELECTION
+            }
         }
     }
+
     // ************** Networking ***********************
-    private suspend fun fetchHeartbeatInfo(url: String) {
-        val request = Request.Builder()
-            .url(url)
-            .build()
-        val response = client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (!response.isSuccessful) throw IOException("Unexpected code $response")
-
-                    for ((name, value) in response.headers) {
-                        println("$name: $value")
-                    }
-
-                    println(response.body!!.string())
-                    println(response.message)
-                }
-            }
-
-        })
-    }
-
     private suspend fun sendHSV(ip: String, path: String) {
         val postBody = """
             {
@@ -160,7 +139,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
             	"green": ${(color.green*100).toInt()},
             	"blue": ${(color.blue*100).toInt()}
             }
-        """.trimIndent().also { println(DEBUG_TAG + it) }
+        """.trimIndent()
         val request = Request.Builder()
             .url("http:/$ip/$path")
             .addHeader("Content-Type", "application/json")
@@ -169,19 +148,10 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
         val response = client.newCall(request).await()
 
-        /*CoroutineScope(IO).launch {
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("Unexpected code $response")
-
-                println(response.body!!.string())
-            }
-        }*/
         withContext(IO) {
             response.body?.use {
                 println(it.charStream().readText())
             }
         }
-
     }
-    // *************************************************
 }

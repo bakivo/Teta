@@ -38,6 +38,12 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         tetaViewModel.stopServiceDiscovery()
     }
+
+    override fun onBackPressed() {
+        if (tetaViewModel.shouldExitOnBackPressed()) {
+            super.onBackPressed()
+        }
+    }
 }
 
 @Composable
