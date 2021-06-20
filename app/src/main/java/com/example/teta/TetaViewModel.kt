@@ -135,9 +135,9 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun sendHSV(ip: String, path: String) {
         val postBody = """
             {
-            	"red": ${(color.red*100).toInt()},
-            	"green": ${(color.green*100).toInt()},
-            	"blue": ${(color.blue*100).toInt()}
+                "red": ${(color.red*255).toInt()},
+            	"green": ${(color.green*255).toInt()},
+            	"blue": ${(color.blue*255).toInt()}
             }
         """.trimIndent()
         val request = Request.Builder()
