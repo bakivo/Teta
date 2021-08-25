@@ -21,8 +21,12 @@ const val ESP_SERVICE_NAME = "ESP32"
 const val NOT_SELECTED = -1
 data class Esp32Unit(val name: String, val ip: String)
 private val client = OkHttpClient()
-enum class ScreenHierarchy {
-    EMPTY, NODE_SELECTION, NODE_CONTROL
+enum class ScreenHierarchy { EMPTY, NODE_SELECTION, MODE_SELECTION, NODE_CONTROL }
+enum class LedModes(val s: String) {
+    ROTATING_COLOR("rotating"),
+    RUNNING_COLOR("running"),
+    SWITCHING_COLOR("switching"),
+    SOLID_COLOR("solid")
 }
 class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -44,6 +48,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     var screenHierarchy by mutableStateOf(ScreenHierarchy.EMPTY)
         private set
 
+    lateinit var currentMode: LedModes
     private val hslArray = FloatArray(3)
     private var mdnsDiscovery: ServiceDiscovery
     var toastMessage: String by mutableStateOf("")
@@ -69,14 +74,25 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun onNodeSelected(index: Int) {
         currentPosition = index
-        screenHierarchy = ScreenHierarchy.NODE_CONTROL
+        screenHierarchy = ScreenHierarchy.MODE_SELECTION
     }
-    fun shouldExitOnBackPressed(): Boolean {
-        if (screenHierarchy == ScreenHierarchy.NODE_CONTROL) {
-            screenHierarchy = ScreenHierarchy.NODE_SELECTION
-            return false
+    fun onModeSelected(mode: Int) {
+        currentMode = LedModes.values()[mode]
+        screenHierarchy = ScreenHierarchy.NODE_CONTROL
+        // send post mode
+        send {
+            sendJsonRequest(currentUnit!!.ip,"mode", JsonModeString(currentMode.ordinal))
         }
-        return true
+    }
+
+    fun shouldExitOnBackPressed(): Boolean {
+        when (screenHierarchy) {
+            ScreenHierarchy.MODE_SELECTION -> screenHierarchy = ScreenHierarchy.NODE_SELECTION
+            ScreenHierarchy.NODE_CONTROL -> screenHierarchy = ScreenHierarchy.MODE_SELECTION
+            ScreenHierarchy.EMPTY -> return true
+            ScreenHierarchy.NODE_SELECTION -> return true
+        }
+        return false
     }
     private fun updateColor(): Color {
         return Color(ColorUtils.HSLToColor(hslArray.apply { this[0] = hue; this[1] = saturation ; this[2] = lightness }))
@@ -85,24 +101,30 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     fun onHueChange(hue: Float) {
         this.hue = hue
         color = updateColor()
-        sendColor()
+        send {
+            sendJsonRequest(currentUnit!!.ip,"rgb", JsonRGBString((color.red*255).toInt(),(color.green*255).toInt(), (color.blue*255).toInt()))
+        }
     }
     fun onSaturationChange(saturation: Float) {
         this.saturation = saturation
         color = updateColor()
-        sendColor()
+        send {
+            sendJsonRequest(currentUnit!!.ip,"rgb", JsonRGBString((color.red*255).toInt(),(color.green*255).toInt(), (color.blue*255).toInt()))
+        }
     }
     fun onLightnessChange(lightness: Float) {
         this.lightness = lightness
         color = updateColor()
-        sendColor()
+        send {
+            sendJsonRequest(currentUnit!!.ip,"rgb", JsonRGBString((color.red*255).toInt(),(color.green*255).toInt(), (color.blue*255).toInt()))
+        }
     }
 
-    fun sendColor() {
+    fun send( function: suspend () -> Unit) {
         viewModelScope.launch {
             delay(1000)
             runCatching {
-                sendHSV(currentUnit!!.ip,"rgb")
+                function()
             }.onFailure {
                 println(DEBUG_TAG + it.message )
                 toastMessage = it.message.toString()
@@ -132,18 +154,18 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ************** Networking ***********************
-    private suspend fun sendHSV(ip: String, path: String) {
-        val postBody = """
+    private suspend fun sendJsonRequest(ip: String, path: String, body: String ) {
+        /*val postBody = """
             {
                 "red": ${(color.red*255).toInt()},
             	"green": ${(color.green*255).toInt()},
             	"blue": ${(color.blue*255).toInt()}
             }
-        """.trimIndent()
+        """.trimIndent()*/
         val request = Request.Builder()
             .url("http:/$ip/$path")
             .addHeader("Content-Type", "application/json")
-            .post(postBody.toRequestBody("application/json; charset=utf-8".toMediaType()))
+            .post(body.toRequestBody("application/json; charset=utf-8".toMediaType()))
             .build()
 
         val response = client.newCall(request).await()

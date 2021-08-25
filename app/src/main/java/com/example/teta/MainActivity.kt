@@ -14,6 +14,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.teta.ui.theme.TetaTheme
 
@@ -57,18 +58,26 @@ private fun MainActivityScreen(viewModel: TetaViewModel) {
         ScreenHierarchy.NODE_SELECTION ->
             SelectionScreen(nodes = viewModel.espUnits, onNodeSelected = viewModel::onNodeSelected)
 
+        ScreenHierarchy.MODE_SELECTION ->
+            ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = viewModel::onModeSelected)
+
         ScreenHierarchy.NODE_CONTROL ->
-            MainScreen(
-                viewModel.color,
-                viewModel.hue,
-                viewModel.saturation,
-                viewModel.lightness,
-                viewModel::onHueChange,
-                viewModel::onSaturationChange,
-                viewModel::onLightnessChange,
-                viewModel.espUnits.get(viewModel.currentPosition),
-                viewModel.toastMessage
-            )
+            if (viewModel.currentMode == LedModes.SOLID_COLOR) {
+                MainScreen(
+                    viewModel.color,
+                    viewModel.hue,
+                    viewModel.saturation,
+                    viewModel.lightness,
+                    viewModel::onHueChange,
+                    viewModel::onSaturationChange,
+                    viewModel::onLightnessChange,
+                    viewModel.espUnits.get(viewModel.currentPosition),
+                    viewModel.toastMessage
+                )
+            } else {
+                EmptyScreen()
+            }
+
     }
 }
 
@@ -76,7 +85,17 @@ private fun MainActivityScreen(viewModel: TetaViewModel) {
 fun EmptyScreen() {
     Text(text = "Empty", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
 }
+@Composable
+fun ModeSelection(modes: List<String>, onModeSelected: (Int) -> Unit) {
+    Column() {
+        modes.forEachIndexed { index, mode ->
+            Button(onClick = { onModeSelected(index) }) {
+                Text(text = mode)
+            }
+        }
 
+    }
+}
 @Composable
 fun SelectionScreen(nodes: List<Esp32Unit>, onNodeSelected: (Int) -> Unit) {
     Column(Modifier.padding(20.dp)) {
@@ -90,6 +109,15 @@ fun SelectionScreen(nodes: List<Esp32Unit>, onNodeSelected: (Int) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center)
             }
+        }
+    }
+}
+@Preview
+@Composable
+fun TestModeSelectionScreen(){
+
+    TetaTheme {
+        Surface(color = MaterialTheme.colors.background) {
         }
     }
 }
