@@ -42,11 +42,13 @@ fun MainScreen(
     espUnit: Esp32Unit = Esp32Unit("Test", "127.0.0.1"),
     toastMessage: String = ""
 ) {
-    if (toastMessage != "") {
+    if (toastMessage.isNotEmpty()) {
         Toast.makeText(LocalContext.current, toastMessage, Toast.LENGTH_LONG).show()
     }
 
-    Box(modifier = Modifier.background(backColor).fillMaxSize()) {
+    Box(modifier = Modifier
+        .background(backColor)
+        .fillMaxSize()) {
         Column {
             Text(text = "${espUnit.name} : ${espUnit.ip}", modifier = Modifier
                 .fillMaxWidth()
@@ -78,6 +80,10 @@ fun MainScreen(
                     icon = TetaIcon.MaxLightness,
                     onLongClick = { onlightnessChanged(1f) }
                 )
+            }
+
+            Button(onClick = { /*TODO*/ }) {
+                Text(text = "modes")
             }
         }
     }
