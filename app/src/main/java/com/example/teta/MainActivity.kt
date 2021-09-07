@@ -4,19 +4,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.material.TabRowDefaults.Divider
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.teta.ui.theme.TetaTheme
+import com.example.teta.utils.toColor
+import com.example.teta.utils.toRGB
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+const val DEBUG_TAG = "TESTS: "
 
 class MainActivity : ComponentActivity() {
     private val tetaViewModel by viewModels<TetaViewModel>()
@@ -52,72 +60,59 @@ private fun MainActivityScreen(viewModel: TetaViewModel) {
 
     when (viewModel.screenHierarchy) {
 
-        ScreenHierarchy.EMPTY ->
-            EmptyScreen()
+        ScreenHierarchy.EMPTY -> EmptyScreen()
 
-        ScreenHierarchy.NODE_SELECTION ->
-            SelectionScreen(nodes = viewModel.espUnits, onNodeSelected = viewModel::onNodeSelected)
+        ScreenHierarchy.NODE_SELECTION -> SelectionScreen(nodes = viewModel.espUnits, onNodeSelected = viewModel::onNodeSelected)
 
-        ScreenHierarchy.MODE_SELECTION ->
-            ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = viewModel::onModeSelected)
+        ScreenHierarchy.MODE_SELECTION -> ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = viewModel::onModeSelected)
 
-        ScreenHierarchy.NODE_CONTROL ->
-            if (viewModel.currentMode == LedModes.SOLID_COLOR) {
-                MainScreen(
-                    viewModel.color,
-                    viewModel.hue,
-                    viewModel.saturation,
-                    viewModel.lightness,
-                    viewModel::onHueChange,
-                    viewModel::onSaturationChange,
-                    viewModel::onLightnessChange,
-                    viewModel.espUnits.get(viewModel.currentPosition),
-                    viewModel.toastMessage
-                )
-            } else {
-                EmptyScreen()
+        ScreenHierarchy.NODE_CONTROL -> when(viewModel.currentMode) {
+
+                LedModes.SOLID_COLOR -> MainScreen(
+                        viewModel.color,
+                        viewModel.hue,
+                        viewModel.saturation,
+                        viewModel.lightness,
+                        viewModel::onHueChange,
+                        viewModel::onSaturationChange,
+                        viewModel::onLightnessChange,
+                        viewModel.espUnits.get(viewModel.currentPosition),
+                        viewModel.toastMessage)
+
+                LedModes.RUNNING_COLOR -> EmptyScreen {
+                    FancyButton()
+                }
+
+                LedModes.ROTATING_COLOR -> {
+                    TODO()
+                }
+
+                LedModes.SWITCHING_COLOR -> {
+                    TODO()
+                }
             }
-
     }
 }
 
+@Preview
 @Composable
-fun EmptyScreen() {
-    Text(text = "Empty", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-}
-@Composable
-fun ModeSelection(modes: List<String>, onModeSelected: (Int) -> Unit) {
-    Column() {
-        modes.forEachIndexed { index, mode ->
-            Button(onClick = { onModeSelected(index) }) {
-                Text(text = mode)
-            }
-        }
-
-    }
-}
-@Composable
-fun SelectionScreen(nodes: List<Esp32Unit>, onNodeSelected: (Int) -> Unit) {
-    Column(Modifier.padding(20.dp)) {
-        nodes.forEachIndexed { index, esp32Unit ->
-            Button(
-                modifier = Modifier.padding(vertical = 5.dp),
-                onClick = { onNodeSelected(index) }
-            ) {
-                Text(
-                    text ="${esp32Unit.name} : ${esp32Unit.ip}",
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center)
-            }
+fun Test1(){
+    TetaTheme {
+        Surface(
+                color = MaterialTheme.colors.background,
+        ) {
+            Screen()
         }
     }
 }
 @Preview
 @Composable
-fun TestModeSelectionScreen(){
-
+fun Test2(){
     TetaTheme {
-        Surface(color = MaterialTheme.colors.background) {
+        Surface(
+                color = MaterialTheme.colors.background,
+        ) {
+            TestScreen()
         }
     }
 }

@@ -28,6 +28,7 @@ enum class LedModes(val s: String) {
     SWITCHING_COLOR("switching"),
     SOLID_COLOR("solid")
 }
+
 class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
     var espUnits: List<Esp32Unit> by mutableStateOf(listOf())
@@ -40,11 +41,10 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var hue: Float by mutableStateOf(0f)
         private set
-    var saturation: Float by mutableStateOf(0f)
+    var saturation: Float by mutableStateOf(110f)
         private set
     var lightness: Float by mutableStateOf(0f)
         private set
-
     var screenHierarchy by mutableStateOf(ScreenHierarchy.EMPTY)
         private set
 
@@ -69,7 +69,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     }
     // ***************** GUI **********************************************
     private fun setup() {
-        hue = 180f; saturation = 1f; lightness = 0.5f
+        hue = 180f; saturation = 50f; lightness = 0.5f
         color = updateColor()
     }
     fun onNodeSelected(index: Int) {
@@ -95,7 +95,8 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
         return false
     }
     private fun updateColor(): Color {
-        return Color(ColorUtils.HSLToColor(hslArray.apply { this[0] = hue; this[1] = saturation ; this[2] = lightness }))
+        return Color(ColorUtils.HSLToColor(hslArray.apply {
+            this[0] = hue; this[1] = saturation ; this[2] = lightness }))
     }
 
     fun onHueChange(hue: Float) {
@@ -119,7 +120,9 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
             sendJsonRequest(currentUnit!!.ip,"rgb", JsonRGBString((color.red*255).toInt(),(color.green*255).toInt(), (color.blue*255).toInt()))
         }
     }
-
+    fun onIconClicked() {
+        saturation += 1
+    }
     fun send( function: suspend () -> Unit) {
         viewModelScope.launch {
             delay(1000)
@@ -129,7 +132,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
                 println(DEBUG_TAG + it.message )
                 toastMessage = it.message.toString()
                 delay(3000)
-                screenHierarchy = ScreenHierarchy.NODE_SELECTION
+                //screenHierarchy = ScreenHierarchy.NODE_SELECTION
             }
         }
     }
@@ -155,13 +158,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
 
     // ************** Networking ***********************
     private suspend fun sendJsonRequest(ip: String, path: String, body: String ) {
-        /*val postBody = """
-            {
-                "red": ${(color.red*255).toInt()},
-            	"green": ${(color.green*255).toInt()},
-            	"blue": ${(color.blue*255).toInt()}
-            }
-        """.trimIndent()*/
+
         val request = Request.Builder()
             .url("http:/$ip/$path")
             .addHeader("Content-Type", "application/json")
