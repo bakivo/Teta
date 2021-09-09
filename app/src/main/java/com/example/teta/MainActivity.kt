@@ -101,7 +101,6 @@ fun Test1(){
         Surface(
                 color = MaterialTheme.colors.background,
         ) {
-            Screen()
         }
     }
 }
@@ -112,7 +111,6 @@ fun Test2(){
         Surface(
                 color = MaterialTheme.colors.background,
         ) {
-            TestScreen()
         }
     }
 }

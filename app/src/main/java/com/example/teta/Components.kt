@@ -9,6 +9,10 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -16,10 +20,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.teta.ui.theme.TetaTheme
 import com.example.teta.utils.toColor
 import com.example.teta.utils.toRGB
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -29,29 +38,28 @@ import kotlinx.coroutines.launch
  *  @param onHueChanged a callback for new selected value
  */
 @Composable
-fun HueCanvas(hueValue: Float, onHueChanged: (Float) -> Unit) {
-    Surface(Modifier.fillMaxWidth(),
-            color = MaterialTheme.colors.primarySurface,
-            shape = RoundedCornerShape(8.dp)
-    ) {
+fun HuePicker(hueValue: Float, onHueChanged: (Float) -> Unit) {
         Canvas(
-                Modifier
-                    .requiredHeight(100.dp).requiredWidthIn(360.dp)
-                    .pointerInput(Unit) {
-                            detectTapGestures(
-                                    onTap = { tapOffset ->
-                                        onHueChanged((HUE_SCALE_UNITS * tapOffset.x / this.size.width))
-                                    },
-                            )
+            Modifier
+                .requiredHeight(100.dp)
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { Offset ->
+                            onHueChanged((HUE_SCALE_UNITS * Offset.x / this.size.width))
                         },
+                    )
+                },
         )
         {
+
             val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
             val hueUnitSize = Size(hueUnitWidth, this.size.height)
-            val hslArray = FloatArray(3)
-            hslArray[1] = 1f    // saturation value for hue with maximum saturation
-            hslArray[2] = 0.5f  // lightness value for hue without tint or shade
 
+            val hslArray = FloatArray(3)
+            hslArray[1] = 1f    // maximum saturation
+            hslArray[2] = 0.5f  // lightness without tint or shade
+            // draw main canvas with all possible hue values
             for (hue in 0..HUE_SCALE_UNITS){
                 hslArray[0] = hue.toFloat()
                 drawRect(
@@ -60,54 +68,22 @@ fun HueCanvas(hueValue: Float, onHueChanged: (Float) -> Unit) {
                         size = hueUnitSize
                 )
             }
-            // highlight a current hue
+            // draw to circles to highlight the current hue
             drawCircle(
                     color = hslArray.apply { this[0] = hueValue }.toRGB().toColor(),
-                    radius = 10f,
+                    radius = 15f,
                     center = Offset(hueValue * hueUnitWidth, 0f)
             )
             drawCircle(
                     color = hslArray.apply { this[0] = hueValue }.toRGB().toColor(),
-                    radius = 10f,
+                    radius = 15f,
                     center = Offset(hueValue * hueUnitWidth, size.height)
             )
         }
-    }
 }
 
 @Composable
-fun SliderBackground(
-    modifier: Modifier = Modifier,
-    elevate: Boolean = false,
-    content: @Composable RowScope.() -> Unit
-) {
-    Surface(
-        modifier = modifier
-                .padding(5.dp)
-                .fillMaxWidth(),
-        shape = RoundedCornerShape(4.dp),
-        elevation = if (elevate) 2.dp else 0.dp) {
-    }
-    Row(modifier = Modifier.fillMaxWidth()) {
-        content()
-    }
-}
-
-val Drawing: DrawScope.() -> Unit = {
-
-    val hslArray = FloatArray(3)
-    hslArray[1] = 1f
-    hslArray[2] = 0.5f
-    val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
-    val hueUnitSize = Size(hueUnitWidth, this.size.height)
-    for (hue in 0..HUE_SCALE_UNITS) {
-        hslArray[0] = hue.toFloat()
-        this.drawRect(color = hslArray.toRGB().toColor(), topLeft = Offset(hue * hueUnitWidth, 0f), size = hueUnitSize)
-    }
-}
-
-@Composable
-fun FancyButton(onDraw: DrawScope.() -> Unit = {}) {
+fun FancyButton() {
     var shift: Int by remember { mutableStateOf(0) }
     LaunchedEffect(Unit) {
         launch {
@@ -118,7 +94,8 @@ fun FancyButton(onDraw: DrawScope.() -> Unit = {}) {
             }
         }
     }
-    Canvas(Modifier
+    Canvas(
+        Modifier
             .fillMaxWidth()
             .requiredHeight(300.dp)
     ) {
@@ -132,10 +109,61 @@ fun FancyButton(onDraw: DrawScope.() -> Unit = {}) {
             drawRect(hslArray.toRGB().toColor(), topLeft = Offset(hue * hueUnitWidth, 0f), size = hueUnitSize)
         }
     }
-
 }
-
-
+@Composable
+fun NewButton(text: String, modifier: Modifier = Modifier, onClicked: () -> Unit) {
+    var shift: Int by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        launch {
+            while (true) {
+                delay(30)
+                if (shift == (HUE_SCALE_UNITS - 1) ) shift = 0
+                shift += 1
+            }
+        }
+    }
+    Button(
+        onClick = { onClicked() },
+        modifier = modifier
+    ) {
+        Box() {
+            Text(
+                text = text,
+                color = Color.Black,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold
+            )
+            Canvas(modifier = Modifier.fillMaxWidth().requiredHeight(20.dp).alpha(0.2f)) {
+                val hslArray = FloatArray(3)
+                hslArray[1] = 1f
+                hslArray[2] = 0.5f
+                val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
+                val hueUnitSize = Size(hueUnitWidth, this.size.height)
+                for (hue in 0 until HUE_SCALE_UNITS) {
+                    hslArray[0] = ((shift + hue) % HUE_SCALE_UNITS).toFloat()
+                    drawRect(
+                        hslArray
+                            .toRGB()
+                            .toColor(),
+                        topLeft = Offset(hue * hueUnitWidth, 0f),
+                        size = hueUnitSize
+                    )
+                }
+            }
+        }
+    }
+}
+@Preview
+@Composable
+fun Prev22() {
+    TetaTheme {
+        Surface(
+            color = MaterialTheme.colors.background,
+        ) {
+            //NewButton()
+        }
+    }
+}
 @Composable
 fun ClickableSliderIcon(
         icon: TetaIcon,
@@ -145,13 +173,13 @@ fun ClickableSliderIcon(
     Icon(painter = painterResource(id = icon.imageVector),
             contentDescription = "Icon",
             modifier = Modifier
-                    .requiredSize(30.dp)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                                onLongPress = { onLongClick() },
-                                onTap = { onClick() }
-                        )
-                    }
+                .requiredSize(30.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { onLongClick() },
+                        onTap = { onClick() }
+                    )
+                }
     )
 }
 
@@ -160,10 +188,7 @@ fun ClickableSliderIcon(
  */
 @Composable
 fun MySlider(value: Float, range: ClosedFloatingPointRange<Float>, onValueChanged: (Float) -> Unit) {
-    Surface(Modifier.fillMaxWidth(),
-        color = MaterialTheme.colors.primarySurface,
-        shape = RoundedCornerShape(8.dp)
-    ) {
+
         Canvas(modifier = Modifier
             .fillMaxWidth()
             .requiredHeight(16.dp)
@@ -190,7 +215,7 @@ fun MySlider(value: Float, range: ClosedFloatingPointRange<Float>, onValueChange
                 CornerRadius(15f, 15f)
             )
         }
-    }
+
 }
 
 @Composable
@@ -213,13 +238,15 @@ fun MySliderHolder(
         }
     }
 }
-@Preview
-@Composable
-fun Prev1(){
-}
 
-@Preview
-@Composable
-fun PreviewHueCanvas() {
-    //HueCanvas(hueValue = 55f) {}
+val RainbowDrawing: DrawScope.() -> Unit = {
+    val hslArray = FloatArray(3)
+    hslArray[1] = 1f
+    hslArray[2] = 0.5f
+    val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
+    val hueUnitSize = Size(hueUnitWidth, this.size.height)
+    for (hue in 0..HUE_SCALE_UNITS) {
+        hslArray[0] = hue.toFloat()
+        this.drawRect(color = hslArray.toRGB().toColor(), topLeft = Offset(hue * hueUnitWidth, 0f), size = hueUnitSize)
+    }
 }
