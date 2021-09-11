@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.example.teta.ui.theme.TetaTheme
 import kotlinx.coroutines.delay
@@ -111,41 +113,53 @@ fun EmptyScreen(content: @Composable ColumnScope.() -> Unit = {}) {
 }
 
 @Composable
-fun ModeSelection(modes: List<String>, onModeSelected: (Int) -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), Alignment.Center,) {
+fun ModeSelection(modes: List<String>, onModeSelected: (Int) -> Unit)
+{
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        Alignment.Center
+    ) {
         Column(
-            Modifier
-                .background(Color.Black)
-                .fillMaxSize()
-                .padding(30.dp)
-                .width(IntrinsicSize.Max), verticalArrangement = Arrangement.SpaceEvenly) {
-
-            modes.forEachIndexed { index, mode -> when {
-
-                mode == LedModes.RUNNING_COLOR.s -> NewButton(
-                    text = mode, modifier = Modifier.fillMaxWidth(), onClicked = { onModeSelected(index) })
-                else -> Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { onModeSelected(index) }
-                ) {
-                    Text(
-                        text = mode,
-                        modifier = Modifier,
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            }
+            modifier = Modifier
+                .padding(10.dp)
+                //.background(Color.Black)
+                //.width(IntrinsicSize.Max)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // Rainbow
+            ButtonWithAnimatedBackground(
+                onClicked = { onModeSelected(LedModes.RUNNING_COLOR.ordinal) },
+                modifier = modeButtonModifier(),
+                animatedBackground = { AnimatedRainbowBackground() }) { MyText(LedModes.RUNNING_COLOR.s) }
+            // Rotation
+            ButtonWithAnimatedBackground(
+                onClicked = { onModeSelected(LedModes.ROTATING_COLOR.ordinal) },
+                modifier = modeButtonModifier(),
+                animatedBackground = { AnimatedFluidBackground() }) { MyText(LedModes.ROTATING_COLOR.s) }
         }
     }
 }
+val modeButtonModifier = fun ColumnScope.() = Modifier
+    .fillMaxWidth()
+    .padding(5.dp)
+    .weight(1f)
 
+@Composable
+fun MyText(text: String) {
+    Text(
+        text = text,
+        fontSize = TextUnit.Unspecified,
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Bold)
+}
+@Preview
 @Composable
 fun SelectionModePreview(){
     TetaTheme {
         Surface(color = MaterialTheme.colors.background) {
-
+            ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = {})
         }
     }
 }
@@ -165,12 +179,13 @@ fun SelectionScreen(nodes: List<Esp32Unit>, onNodeSelected: (Int) -> Unit) {
                 .width(IntrinsicSize.Max)) {
             nodes.forEachIndexed { index, esp32Unit ->
                 Button(
-                    { onNodeSelected(index) },
-                    Modifier
+                    onClick = { onNodeSelected(index) },
+                    modifier = Modifier
                         .fillMaxWidth()
                         .padding(5.dp)
                 ) {
-                    Text(text = esp32Unit.name + " : " + esp32Unit.ip)
+                    Text(
+                        text = esp32Unit.name + " : " + esp32Unit.ip)
                 }
             }
         }

@@ -1,18 +1,13 @@
 package com.example.teta
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -20,15 +15,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.teta.ui.theme.TetaTheme
 import com.example.teta.utils.toColor
-import com.example.teta.utils.toRGB
-import kotlinx.coroutines.CoroutineScope
+import com.example.teta.utils.HSL2RGB
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -63,27 +52,29 @@ fun HuePicker(hueValue: Float, onHueChanged: (Float) -> Unit) {
             for (hue in 0..HUE_SCALE_UNITS){
                 hslArray[0] = hue.toFloat()
                 drawRect(
-                        color = hslArray.toRGB().toColor(),
+                        color = hslArray.HSL2RGB().toColor(),
                         topLeft = Offset(hue * hueUnitWidth,0f),
                         size = hueUnitSize
                 )
             }
             // draw to circles to highlight the current hue
             drawCircle(
-                    color = hslArray.apply { this[0] = hueValue }.toRGB().toColor(),
+                    color = hslArray.apply { this[0] = hueValue }.HSL2RGB().toColor(),
                     radius = 15f,
                     center = Offset(hueValue * hueUnitWidth, 0f)
             )
             drawCircle(
-                    color = hslArray.apply { this[0] = hueValue }.toRGB().toColor(),
+                    color = hslArray.apply { this[0] = hueValue }.HSL2RGB().toColor(),
                     radius = 15f,
                     center = Offset(hueValue * hueUnitWidth, size.height)
             )
         }
 }
 
+
 @Composable
-fun FancyButton() {
+fun FancyButton()
+{
     var shift: Int by remember { mutableStateOf(0) }
     LaunchedEffect(Unit) {
         launch {
@@ -106,70 +97,103 @@ fun FancyButton() {
         val hueUnitSize = Size(hueUnitWidth, this.size.height)
         for (hue in 0 until HUE_SCALE_UNITS) {
             hslArray[0] = ((shift + hue) % HUE_SCALE_UNITS).toFloat()
-            drawRect(hslArray.toRGB().toColor(), topLeft = Offset(hue * hueUnitWidth, 0f), size = hueUnitSize)
+            drawRect(hslArray.HSL2RGB().toColor(), topLeft = Offset(hue * hueUnitWidth, 0f), size = hueUnitSize)
         }
     }
 }
+
 @Composable
-fun NewButton(text: String, modifier: Modifier = Modifier, onClicked: () -> Unit) {
+fun AnimatedRainbowBackground(
+    speedMillis: Long = 30)
+{
     var shift: Int by remember { mutableStateOf(0) }
+
     LaunchedEffect(Unit) {
         launch {
             while (true) {
-                delay(30)
+                delay(speedMillis)
                 if (shift == (HUE_SCALE_UNITS - 1) ) shift = 0
                 shift += 1
             }
         }
     }
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(0.4f)
+    ) {
+        val hslArray = FloatArray(3)
+        hslArray[1] = 1f
+        hslArray[2] = 0.5f
+
+        val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
+        val hueUnitSize = Size(hueUnitWidth, this.size.height)
+
+        for (hue in 0 until HUE_SCALE_UNITS) {
+            hslArray[0] = ((shift + hue) % HUE_SCALE_UNITS).toFloat()
+
+            drawRect(
+                color = hslArray
+                    .HSL2RGB()
+                    .toColor(),
+                topLeft = Offset(hue * hueUnitWidth, 0f),
+                size = hueUnitSize
+            )
+        }
+    }
+}
+
+@Composable
+fun AnimatedFluidBackground(
+    speedMillis: Long = 30)
+{
+    var hueValue: Int by remember { mutableStateOf(0)}
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            hueValue = if (hueValue == 360) 0 else hueValue + 1
+            delay(speedMillis)
+        }
+    }
+    Canvas(
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(0.4f)
+    ) {
+        val hsl = floatArrayOf( hueValue.toFloat(), 1f, 0.5f)
+        drawRect(
+            color = hsl.HSL2RGB().toColor(),
+            topLeft = Offset.Zero,
+            size = Size(size.width, size.height)
+        )
+    }
+}
+
+@Composable
+fun ButtonWithAnimatedBackground(
+    onClicked: () -> Unit,
+    modifier: Modifier = Modifier,
+    animatedBackground: @Composable () -> Unit,
+    text: @Composable () -> Unit)
+{
     Button(
         onClick = { onClicked() },
         modifier = modifier
     ) {
-        Box() {
-            Text(
-                text = text,
-                color = Color.Black,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Bold
-            )
-            Canvas(modifier = Modifier.fillMaxWidth().requiredHeight(20.dp).alpha(0.2f)) {
-                val hslArray = FloatArray(3)
-                hslArray[1] = 1f
-                hslArray[2] = 0.5f
-                val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
-                val hueUnitSize = Size(hueUnitWidth, this.size.height)
-                for (hue in 0 until HUE_SCALE_UNITS) {
-                    hslArray[0] = ((shift + hue) % HUE_SCALE_UNITS).toFloat()
-                    drawRect(
-                        hslArray
-                            .toRGB()
-                            .toColor(),
-                        topLeft = Offset(hue * hueUnitWidth, 0f),
-                        size = hueUnitSize
-                    )
-                }
-            }
+        Box(contentAlignment = Alignment.Center) {
+            text()
+            animatedBackground()
         }
     }
 }
-@Preview
-@Composable
-fun Prev22() {
-    TetaTheme {
-        Surface(
-            color = MaterialTheme.colors.background,
-        ) {
-            //NewButton()
-        }
-    }
-}
+
 @Composable
 fun ClickableSliderIcon(
         icon: TetaIcon,
         onClick: () -> Unit = {},
-        onLongClick: () -> Unit = {},
-) {
+        onLongClick: () -> Unit = {})
+{
     Icon(painter = painterResource(id = icon.imageVector),
             contentDescription = "Icon",
             modifier = Modifier
@@ -247,6 +271,6 @@ val RainbowDrawing: DrawScope.() -> Unit = {
     val hueUnitSize = Size(hueUnitWidth, this.size.height)
     for (hue in 0..HUE_SCALE_UNITS) {
         hslArray[0] = hue.toFloat()
-        this.drawRect(color = hslArray.toRGB().toColor(), topLeft = Offset(hue * hueUnitWidth, 0f), size = hueUnitSize)
+        this.drawRect(color = hslArray.HSL2RGB().toColor(), topLeft = Offset(hue * hueUnitWidth, 0f), size = hueUnitSize)
     }
 }
