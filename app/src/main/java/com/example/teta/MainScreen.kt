@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ExperimentalGraphicsApi
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -58,7 +59,6 @@ fun MainScreen(
                 Text("${espUnit.name} : ${espUnit.ip}")
 
                 HuePicker(hue) { onHueChanged(it) }
-
                 Spacer(modifier = Modifier
                     .requiredHeight(10.dp)
                     .fillMaxWidth())
@@ -112,32 +112,43 @@ fun EmptyScreen(content: @Composable ColumnScope.() -> Unit = {}) {
     }
 }
 
+@ExperimentalGraphicsApi
 @Composable
 fun ModeSelection(modes: List<String>, onModeSelected: (Int) -> Unit)
 {
     Box(
         modifier = Modifier
             .fillMaxSize(),
-        Alignment.Center
-    ) {
+        Alignment.Center)
+    {
         Column(
             modifier = Modifier
                 .padding(10.dp)
-                //.background(Color.Black)
-                //.width(IntrinsicSize.Max)
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
+            verticalArrangement = Arrangement.SpaceEvenly)
+        {
             // Rainbow
             ButtonWithAnimatedBackground(
                 onClicked = { onModeSelected(LedModes.RUNNING_COLOR.ordinal) },
                 modifier = modeButtonModifier(),
                 animatedBackground = { AnimatedRainbowBackground() }) { MyText(LedModes.RUNNING_COLOR.s) }
+
             // Rotation
             ButtonWithAnimatedBackground(
                 onClicked = { onModeSelected(LedModes.ROTATING_COLOR.ordinal) },
                 modifier = modeButtonModifier(),
                 animatedBackground = { AnimatedFluidBackground() }) { MyText(LedModes.ROTATING_COLOR.s) }
+
+            // Rotation
+            ButtonWithAnimatedBackground(
+                onClicked = { onModeSelected(LedModes.SWITCHING_COLOR.ordinal) },
+                modifier = modeButtonModifier(),
+                animatedBackground = { AnimatedSwitchedColorsBackground() }) { MyText(LedModes.SWITCHING_COLOR.s) }
+
+            // Solid Color selection
+            Button(onClick = { onModeSelected(LedModes.SOLID_COLOR.ordinal) }, modifier = modeButtonModifier()) {
+                MyText(text = LedModes.SOLID_COLOR.s)
+            }
         }
     }
 }
@@ -159,7 +170,7 @@ fun MyText(text: String) {
 fun SelectionModePreview(){
     TetaTheme {
         Surface(color = MaterialTheme.colors.background) {
-            ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = {})
+            //ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = {})
         }
     }
 }

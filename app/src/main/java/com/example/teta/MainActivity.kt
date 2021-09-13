@@ -6,11 +6,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.ExperimentalGraphicsApi
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.teta.ui.theme.TetaTheme
 
 const val DEBUG_TAG = "TESTS: "
 
+@ExperimentalGraphicsApi
 class MainActivity : ComponentActivity() {
     private val tetaViewModel by viewModels<TetaViewModel>()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +42,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@ExperimentalGraphicsApi
 @Composable
 private fun MainActivityScreen(viewModel: TetaViewModel) {
 
@@ -69,11 +72,11 @@ private fun MainActivityScreen(viewModel: TetaViewModel) {
                 }
 
                 LedModes.ROTATING_COLOR -> {
-                    TODO()
+
                 }
 
                 LedModes.SWITCHING_COLOR -> {
-                    TODO()
+
                 }
             }
     }

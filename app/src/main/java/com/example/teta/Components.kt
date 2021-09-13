@@ -7,11 +7,13 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ExperimentalGraphicsApi
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
@@ -21,56 +23,84 @@ import com.example.teta.utils.HSL2RGB
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/**
- *  Canvas element that draws rainbow like representation of the hue range [0.0..360.0]
- *  @param hueValue a current value to show on a canvas as a grey line
- *  @param onHueChanged a callback for new selected value
- */
 @Composable
-fun HuePicker(hueValue: Float, onHueChanged: (Float) -> Unit) {
-        Canvas(
-            Modifier
-                .requiredHeight(100.dp)
-                .fillMaxWidth()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { Offset ->
-                            onHueChanged((HUE_SCALE_UNITS * Offset.x / this.size.width))
-                        },
-                    )
-                },
-        )
-        {
-
-            val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
-            val hueUnitSize = Size(hueUnitWidth, this.size.height)
-
-            val hslArray = FloatArray(3)
-            hslArray[1] = 1f    // maximum saturation
-            hslArray[2] = 0.5f  // lightness without tint or shade
-            // draw main canvas with all possible hue values
-            for (hue in 0..HUE_SCALE_UNITS){
-                hslArray[0] = hue.toFloat()
-                drawRect(
-                        color = hslArray.HSL2RGB().toColor(),
-                        topLeft = Offset(hue * hueUnitWidth,0f),
-                        size = hueUnitSize
-                )
-            }
-            // draw to circles to highlight the current hue
-            drawCircle(
-                    color = hslArray.apply { this[0] = hueValue }.HSL2RGB().toColor(),
-                    radius = 15f,
-                    center = Offset(hueValue * hueUnitWidth, 0f)
-            )
-            drawCircle(
-                    color = hslArray.apply { this[0] = hueValue }.HSL2RGB().toColor(),
-                    radius = 15f,
-                    center = Offset(hueValue * hueUnitWidth, size.height)
+fun HueRangeStaticDrawing() {
+    println(DEBUG_TAG + "passive")
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        // dimensions of one unit in [0..360] hue range
+        val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
+        val hueUnitHeight: Float = this.size.height
+        val hueUnitSize = Size(hueUnitWidth, hueUnitHeight)
+        // array for storing 3 float values used to ease transformation of hue variable to Color
+        val hslArray = FloatArray(3)
+        // second and third array elements is not supposed to change
+        hslArray[1] = 1f    // saturation value corresponds to the pure color
+        hslArray[2] = 0.5f  // lightness value corresponds to the color without tint and shade
+        // draw main canvas with all possible hue values
+        for (hue in 0..HUE_SCALE_UNITS) {
+            hslArray[0] = hue.toFloat()
+            drawRect(
+                color = hslArray.HSL2RGB().toColor(),
+                topLeft = Offset(hue * hueUnitWidth,0f),
+                size = hueUnitSize
             )
         }
+    }
 }
 
+@Composable
+fun HueActive(hueValue: Float, onHueChanged: (Float) -> Unit) {
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { Offset ->
+                        onHueChanged((HUE_SCALE_UNITS * Offset.x / this.size.width))
+                    },
+                )
+            },
+    )
+    {
+
+        val hueUnitWidth: Float = this.size.width / HUE_SCALE_UNITS
+
+        val hslArray = FloatArray(3)
+        hslArray[1] = 1f    // maximum saturation
+        hslArray[2] = 0.5f  // lightness without tint or shade
+        // draw two circles to highlight the current hue
+        drawCircle(
+            color = hslArray.apply { this[0] = hueValue }.HSL2RGB().toColor(),
+            radius = 15f,
+            center = Offset(hueValue * hueUnitWidth, 0f)
+        )
+        drawCircle(
+            color = hslArray.apply { this[0] = hueValue }.HSL2RGB().toColor(),
+            radius = 15f,
+            center = Offset(hueValue * hueUnitWidth, size.height)
+        )
+    }
+}
+
+/**
+ *  Draws rainbow alike widget representing hue range [0..360] with new value selection
+ *  @param hueValue a current value to highlight on a canvas
+ *  @param onHueChanged a callback for processing the selected value
+ *
+ *  Note: Drawing function HueRangeStaticDrawing() is intended to optimize Canvas API calls for static rainbow background
+ *
+ */
+
+@Composable
+fun HuePicker(hueValue: Float, onHueChanged: (Float) -> Unit) {
+    Box(modifier = Modifier
+        .requiredHeight(100.dp)
+        .fillMaxWidth())
+    {
+        HueActive(hueValue = hueValue, onHueChanged = onHueChanged)
+        HueRangeStaticDrawing()
+    }
+}
 
 @Composable
 fun FancyButton()
@@ -164,6 +194,34 @@ fun AnimatedFluidBackground(
         val hsl = floatArrayOf( hueValue.toFloat(), 1f, 0.5f)
         drawRect(
             color = hsl.HSL2RGB().toColor(),
+            topLeft = Offset.Zero,
+            size = Size(size.width, size.height)
+        )
+    }
+}
+
+@ExperimentalGraphicsApi
+@Composable
+fun AnimatedSwitchedColorsBackground(
+    color1: Color = Color.hsl(180f,0.8f, 0.5f, colorSpace = ColorSpaces.Srgb),
+    color2: Color = Color.hsl(0f,0.8f, 0.5f, colorSpace = ColorSpaces.Srgb),
+    speedMillis: Long = 2000)
+{
+    var switch: Boolean by remember { mutableStateOf(false)}
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            switch = !switch
+            delay(speedMillis)
+        }
+    }
+    Canvas(
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(0.4f)
+    ) {
+        drawRect(
+            color = if (switch) color1 else color2,
             topLeft = Offset.Zero,
             size = Size(size.width, size.height)
         )
@@ -264,6 +322,7 @@ fun MySliderHolder(
 }
 
 val RainbowDrawing: DrawScope.() -> Unit = {
+    println(DEBUG_TAG + "rainbow background is drawn")
     val hslArray = FloatArray(3)
     hslArray[1] = 1f
     hslArray[2] = 0.5f
