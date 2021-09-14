@@ -1,8 +1,10 @@
 package com.example.teta
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -103,7 +105,7 @@ fun HuePicker(hueValue: Float, onHueChanged: (Float) -> Unit) {
 }
 
 @Composable
-fun FancyButton()
+fun FancyEffect()
 {
     var shift: Int by remember { mutableStateOf(0) }
     LaunchedEffect(Unit) {
@@ -317,6 +319,31 @@ fun MySliderHolder(
 
         if (iconsEnabled){
             Box(Modifier.weight(1f), Alignment.Center) { rightSlot() }
+        }
+    }
+}
+
+@Composable
+fun Screen(
+    toastMessage: String = "",
+    content: @Composable ColumnScope.() -> Unit)
+{
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        Alignment.Center)
+    {
+        Surface(Modifier.fillMaxWidth(),
+            color = MaterialTheme.colors.primarySurface,
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Column(
+                Modifier
+                    .padding(5.dp)
+                    .width(IntrinsicSize.Max), Arrangement.Center, Alignment.CenterHorizontally
+            )
+            {
+                content()
+            }
         }
     }
 }

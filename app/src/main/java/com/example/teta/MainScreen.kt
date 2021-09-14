@@ -45,6 +45,7 @@ fun MainScreen(
         Modifier
             .fillMaxSize()
             .background(backColor), Alignment.Center) {
+
         Surface(Modifier.fillMaxWidth(),
             color = MaterialTheme.colors.primarySurface,
             shape = RoundedCornerShape(8.dp)
@@ -59,6 +60,7 @@ fun MainScreen(
                 Text("${espUnit.name} : ${espUnit.ip}")
 
                 HuePicker(hue) { onHueChanged(it) }
+
                 Spacer(modifier = Modifier
                     .requiredHeight(10.dp)
                     .fillMaxWidth())
@@ -94,27 +96,15 @@ fun MainScreen(
 
 @Composable
 fun EmptyScreen(content: @Composable ColumnScope.() -> Unit = {}) {
-    var shift: Int by remember { mutableStateOf(0) }
-    LaunchedEffect(Unit) {
-        launch {
-            while (true) {
-                delay(30)
-                if (shift == (HUE_SCALE_UNITS - 1) ) shift = 0
-                shift += 1
-            }
-        }
-    }
+
     Column {
-        FancyButton()
-        // Display a circular progress indicator whilst loading
-        CircularProgressIndicator()
         content()
     }
 }
 
 @ExperimentalGraphicsApi
 @Composable
-fun ModeSelection(modes: List<String>, onModeSelected: (Int) -> Unit)
+fun ModeSelection(modes: List<String> = emptyList(), onModeSelected: (Int) -> Unit)
 {
     Box(
         modifier = Modifier
@@ -165,15 +155,6 @@ fun MyText(text: String) {
         fontFamily = FontFamily.Serif,
         fontWeight = FontWeight.Bold)
 }
-@Preview
-@Composable
-fun SelectionModePreview(){
-    TetaTheme {
-        Surface(color = MaterialTheme.colors.background) {
-            //ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = {})
-        }
-    }
-}
 
 @Composable
 fun SelectionScreen(nodes: List<Esp32Unit>, onNodeSelected: (Int) -> Unit) {
@@ -213,6 +194,15 @@ fun SelectionScreenPreview(){
     TetaTheme {
         Surface(color = MaterialTheme.colors.background) {
             SelectionScreen(nodes = generateUnits(4), onNodeSelected = {})
+        }
+    }
+}
+
+@Composable
+fun SelectionModePreview(){
+    TetaTheme {
+        Surface(color = MaterialTheme.colors.background) {
+            //ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = {})
         }
     }
 }

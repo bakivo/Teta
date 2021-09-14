@@ -4,10 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ExperimentalGraphicsApi
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.teta.ui.theme.TetaTheme
 
 const val DEBUG_TAG = "TESTS: "
@@ -52,7 +55,7 @@ private fun MainActivityScreen(viewModel: TetaViewModel) {
 
         ScreenHierarchy.NODE_SELECTION -> SelectionScreen(nodes = viewModel.espUnits, onNodeSelected = viewModel::onNodeSelected)
 
-        ScreenHierarchy.MODE_SELECTION -> ModeSelection(modes = LedModes.values().toList().map { it.s }, onModeSelected = viewModel::onModeSelected)
+        ScreenHierarchy.MODE_SELECTION -> ModeSelection(onModeSelected = viewModel::onModeSelected)
 
         ScreenHierarchy.NODE_CONTROL -> when(viewModel.currentMode) {
 
@@ -67,9 +70,15 @@ private fun MainActivityScreen(viewModel: TetaViewModel) {
                         viewModel.espUnits.get(viewModel.currentPosition),
                         viewModel.toastMessage)
 
-                LedModes.RUNNING_COLOR -> EmptyScreen {
-                    FancyButton()
-                }
+                LedModes.RUNNING_COLOR ->
+                    Screen(viewModel.toastMessage) {
+                        MyText("Speed")
+                        Spacer(Modifier.requiredHeight(10.dp))
+                        MySliderHolder(false) {
+                            MySlider(viewModel.speedMillis, range = SPEED_MILLIS_RANGE, viewModel::onSpeedChange)
+                        }
+                    }
+
 
                 LedModes.ROTATING_COLOR -> {
 
@@ -82,19 +91,8 @@ private fun MainActivityScreen(viewModel: TetaViewModel) {
     }
 }
 
-@Preview
 @Composable
 fun Test1(){
-    TetaTheme {
-        Surface(
-                color = MaterialTheme.colors.background,
-        ) {
-        }
-    }
-}
-@Preview
-@Composable
-fun Test2(){
     TetaTheme {
         Surface(
                 color = MaterialTheme.colors.background,

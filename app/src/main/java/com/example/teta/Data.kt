@@ -10,3 +10,5 @@ const val HUE_SCALE_UNITS = 360
 val HUE_RANGE: ClosedFloatingPointRange<Float> = 0f..360f
 val SATURATION_RANGE: ClosedFloatingPointRange<Float> = 0f..1f
 val LIGHTNESS_RANGE: ClosedFloatingPointRange<Float> = 0f..1f
+val SPEED_MILLIS_RANGE: ClosedFloatingPointRange<Float> = 100f..10000f
+

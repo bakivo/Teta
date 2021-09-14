@@ -36,7 +36,7 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
     var currentPosition by mutableStateOf(NOT_SELECTED)
     val currentUnit: Esp32Unit?
         get() = espUnits.getOrNull(currentPosition)
-
+    // parameters defining color
     var color: Color by mutableStateOf(Color.Magenta)
         private set
     var hue: Float by mutableStateOf(0f)
@@ -45,6 +45,10 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var lightness: Float by mutableStateOf(0f)
         private set
+    // parameters defining other aspects of effects
+    var speedMillis: Float by mutableStateOf(1000f)
+        private set
+    //
     var screenHierarchy by mutableStateOf(ScreenHierarchy.EMPTY)
         private set
 
@@ -119,6 +123,17 @@ class TetaViewModel(application: Application) : AndroidViewModel(application) {
         send {
             sendJsonRequest(currentUnit!!.ip,"rgb", JsonRGBString((color.red*255).toInt(),(color.green*255).toInt(), (color.blue*255).toInt()))
         }
+    }
+    fun onSpeedChange(speedMillis: Float) {
+        println("$DEBUG_TAG : speed $speedMillis")
+        if (speedMillis in SPEED_MILLIS_RANGE) {
+            this.speedMillis = speedMillis
+            // send to MCU
+        }
+        else {
+            toastMessage = "parameter speed is out of valid range"
+        }
+
     }
     fun onIconClicked() {
         saturation += 1
