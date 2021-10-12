@@ -8,7 +8,7 @@ android {
     buildToolsVersion = "30.0.3"
 
     defaultConfig {
-        applicationId = "com.example.teta"
+        applicationId = "com.vnbs.teta"
         minSdk = 26
         targetSdk = 31
         versionCode = 1
